@@ -2,9 +2,9 @@
   "mcpServers": {
     "shrimp-task-manager": {
       "command": "node",
-      "args": ["/home/user/mcp-shrimp-task-manager/dist/index.js"],
+      "args": ["/root/mcp-shrimp-task-manager/dist/index.js"],
       "env": {
-        "DATA_DIR": "/home/user/shrimp_data",
+        "DATA_DIR": "/root/shrimp_data",
         "TEMPLATES_USE": "en",
         "ENABLE_GUI": "false"
       }
