@@ -1,0 +1,141 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  provider      String    // 'google' | 'kakao'
+  providerId    String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  anniversaries Anniversary[]
+  addresses     Address[]
+  paymentMethods PaymentMethod[]
+  orders        Order[]
+}
+
+// 기념일 수신자 (대상자)
+model Recipient {
+  id            String    @id @default(cuid())
+  name          String    // 예: '어머님', '아버님', '아내'
+  relationship  String    // 예: 'parent', 'spouse', 'child'
+  phone         String?
+  preferences   String?   // JSON 형태의 취향 정보
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  anniversaries Anniversary[]
+}
+
+// 기념일
+model Anniversary {
+  id            String    @id @default(cuid())
+  userId        String
+  recipientId   String
+  name          String    // 예: '어머님 생신', '결혼기념일'
+  date          DateTime  // 기념일 날짜
+  isLunar       Boolean   @default(false) // 음력 여부
+  type          String    // 'birthday', 'wedding', 'memorial', 'custom'
+  notifyDays    Int       @default(7) // D-7 알림
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipient     Recipient @relation(fields: [recipientId], references: [id])
+  orders        Order[]
+
+  @@index([userId])
+  @@index([date])
+}
+
+// 배송지
+model Address {
+  id            String    @id @default(cuid())
+  userId        String
+  recipientName String
+  phone         String
+  zipCode       String
+  address       String
+  addressDetail String?
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders        Order[]
+
+  @@index([userId])
+}
+
+// 결제 수단
+model PaymentMethod {
+  id            String    @id @default(cuid())
+  userId        String
+  type          String    // 'card', 'bank'
+  cardNumber    String    // 마스킹된 카드 번호
+  cardCompany   String    // 카드사
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders        Order[]
+
+  @@index([userId])
+}
+
+// 선물 상품
+model Gift {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  price         Int
+  imageUrl      String?
+  category      String    // 'flower', 'health', 'food', 'other'
+  tags          String?   // JSON 배열
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders        Order[]
+}
+
+// 주문
+model Order {
+  id              String    @id @default(cuid())
+  userId          String
+  anniversaryId   String?
+  giftId          String
+  addressId       String
+  paymentMethodId String
+
+  amount          Int
+  status          String    // 'pending', 'paid', 'delivered', 'cancelled'
+  orderDate       DateTime  @default(now())
+  deliveryDate    DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id])
+  anniversary     Anniversary? @relation(fields: [anniversaryId], references: [id])
+  gift            Gift      @relation(fields: [giftId], references: [id])
+  address         Address   @relation(fields: [addressId], references: [id])
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([userId])
+  @@index([anniversaryId])
+  @@index([status])
+}
